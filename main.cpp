@@ -126,7 +126,7 @@ int main()
 
         // todo -iwad param, build iwad dirs, choose iwad file
 
-        fmt::print("Initializing wad files\n");
+        fmt::print("Initializing WAD files\n");
 
         const auto [iwad_path, iwad] = core::find_iwad();
 
@@ -140,29 +140,33 @@ int main()
         auto menu_sys = menu::system(iwad, game_sys);
 
         auto gfx_sys = grfx::system({}, data);
+bool running = true;
 
-        core::event_queue events;
-        while (true)
+while (running)
+{
+    sdl_get_events(events);
+
+    while (const auto e = events.pop())
+    {
+        if (std::holds_alternative<core::quit_event>(*e))
         {
-            sdl_get_events(events);
-
-            process_events(events, menu_sys, game_sys);
-
-            game_sys.tick();
-
-            game_sys.draw(gfx_sys, data);
-
-            menu_sys.draw(gfx_sys, data);
-            gfx_sys.update();
+            running = false;
+            break;
         }
+
+        if (!menu_sys.handle_event(*e))
+            game_sys.handle_event(*e);
     }
-    catch (std::exception& e)
-    {
-        fmt::print("Shut down due to error: {}\n", e.what());
-        return -1;
-    }
-    catch (...)
-    {
+
+    if (!running) break;
+
+    game_sys.tick();
+
+    game_sys.draw(gfx_sys, data);
+    menu_sys.draw(gfx_sys, data);
+
+    gfx_sys.update();
+}
         fmt::print("Shut down due to unknown error\n");
         return -1;
     }
